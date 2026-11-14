@@ -2,6 +2,7 @@
 export const games = [
   {
     id: "star-run",
+    unit: "점",
     title: "별똥별 달리기",
     desc: "장애물을 뛰어넘어 멀리 달려요",
     tag: "달리기",
@@ -12,6 +13,7 @@ export const games = [
   },
   {
     id: "bricks",
+    unit: "점",
     title: "알록달록 벽돌깨기",
     desc: "공을 튕겨 벽돌을 모두 깨요",
     tag: "아케이드",
@@ -22,6 +24,7 @@ export const games = [
   },
   {
     id: "space",
+    unit: "점",
     title: "우주 지킴이",
     desc: "쏟아지는 운석을 쏘아 지구를 지켜요",
     tag: "슈팅",
@@ -32,6 +35,7 @@ export const games = [
   },
   {
     id: "stairs",
+    unit: "칸",
     title: "구름 계단",
     desc: "방향을 맞춰 끝없이 올라가요",
     tag: "순발력",
@@ -42,6 +46,7 @@ export const games = [
   },
   {
     id: "snake",
+    unit: "개",
     title: "꼬마 뱀",
     desc: "사과를 먹고 점점 길어져요",
     tag: "아케이드",
@@ -52,6 +57,8 @@ export const games = [
   },
   {
     id: "memory",
+    unit: "번",
+    rank: "low", // 숫자가 작을수록 좋은 기록
     title: "짝 맞추기",
     desc: "같은 그림 카드를 찾아 뒤집어요",
     tag: "기억력",
@@ -62,6 +69,7 @@ export const games = [
   },
   {
     id: "blocks",
+    unit: "점",
     title: "블록 쌓기",
     desc: "떨어지는 조각으로 줄을 채워요",
     tag: "퍼즐",
@@ -72,6 +80,7 @@ export const games = [
   },
   {
     id: "maze",
+    unit: "점",
     title: "치즈 미로",
     desc: "고양이를 피해 치즈를 모두 먹어요",
     tag: "미로",
@@ -82,6 +91,7 @@ export const games = [
   },
   {
     id: "garden",
+    unit: "점",
     title: "텃밭 지키기",
     desc: "몰려오는 벌레를 물로 쫓아내요",
     tag: "슈팅",
@@ -92,6 +102,7 @@ export const games = [
   },
   {
     id: "moles",
+    unit: "점",
     title: "두더지 잡기",
     desc: "45초 동안 두더지를 잡아요",
     tag: "순발력",
@@ -102,6 +113,7 @@ export const games = [
   },
   {
     id: "plane",
+    unit: "개",
     title: "종이비행기",
     desc: "연필 사이를 요리조리 날아요",
     tag: "순발력",
@@ -109,5 +121,71 @@ export const games = [
     emoji: "✈️",
     color: "linear-gradient(135deg, #4dabf7, #ffe066)",
     url: "games/plane/index.html",
+  },
+  {
+    id: "chess",
+    unit: "점",
+    title: "체스",
+    desc: "AI와 두는 체스 한 판",
+    tag: "AI 대결",
+    help: "내 말(흰색)을 누르고 갈 곳을 눌러요. 이기면 난이도에 따라 승점 1~3점을 받아요.",
+    emoji: "♟️",
+    color: "linear-gradient(135deg, #5c4033, #f0d9b5)",
+    url: "games/chess/index.html",
+  },
+  {
+    id: "omok",
+    unit: "점",
+    title: "오목",
+    desc: "돌 다섯 개를 먼저 이어요",
+    tag: "AI 대결",
+    help: "빈 곳을 눌러 검은 돌을 놓아요. 이기면 난이도에 따라 승점 1~3점을 받아요.",
+    emoji: "⚫",
+    color: "linear-gradient(135deg, #7a5520, #e3b565)",
+    url: "games/omok/index.html",
+  },
+  {
+    id: "reversi",
+    unit: "점",
+    title: "리버시",
+    desc: "상대 돌을 뒤집어 내 돌로 만들어요",
+    tag: "AI 대결",
+    help: "점이 찍힌 곳에만 둘 수 있어요. 끝났을 때 돌이 많으면 이겨요.",
+    emoji: "⚪",
+    color: "linear-gradient(135deg, #0b3d2c, #34ab76)",
+    url: "games/reversi/index.html",
+  },
+  {
+    id: "four",
+    unit: "점",
+    title: "사목",
+    desc: "말을 떨어뜨려 네 개를 이어요",
+    tag: "AI 대결",
+    help: "줄을 누르거나 ← → 키로 고르고 스페이스로 떨어뜨려요.",
+    emoji: "🔴",
+    color: "linear-gradient(135deg, #3d5af1, #ff6b6b)",
+    url: "games/four/index.html",
+  },
+  {
+    id: "tictactoe",
+    unit: "점",
+    title: "삼목",
+    desc: "○ 세 개를 먼저 이어요",
+    tag: "AI 대결",
+    help: "빈칸을 누르거나 숫자 키 1~9로 놓아요.",
+    emoji: "⭕",
+    color: "linear-gradient(135deg, #0f3460, #533483)",
+    url: "games/tictactoe/index.html",
+  },
+  {
+    id: "pingpong",
+    unit: "점",
+    title: "탁구 대결",
+    desc: "AI와 5점 내기 탁구",
+    tag: "AI 대결",
+    help: "마우스·손가락 또는 ↑ ↓ 키로 왼쪽 채를 움직여요.",
+    emoji: "🏓",
+    color: "linear-gradient(135deg, #12324a, #1c7c54)",
+    url: "games/pingpong/index.html",
   },
 ];

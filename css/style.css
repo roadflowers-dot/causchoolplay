@@ -280,7 +280,7 @@ main { max-width: 1040px; margin: 0 auto; padding: 28px 20px 80px; }
 .rank-box { max-width: 520px; margin: 16px auto 0; }
 .rank-list { list-style: none; margin: 10px 0 8px; padding: 0; }
 .rank-list li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; }
-.rank-list li.me { background: var(--primary-soft); }
+.rank-list li.mine { background: var(--primary-soft); }
 .rank-no { width: 28px; text-align: center; font-weight: 800; color: var(--muted); }
 .rank-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .rank-box .muted { font-size: .88rem; }

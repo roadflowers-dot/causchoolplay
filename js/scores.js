@@ -58,7 +58,7 @@ function render() {
   const uid = state.user.uid;
   list.replaceChildren(...rows.map((d, i) => {
     const s = d.data();
-    const li = el("li", d.id === uid ? "me" : "");
+    const li = el("li", d.id === uid ? "mine" : "");
     li.append(el("span", "rank-no", ["🥇", "🥈", "🥉"][i] || String(i + 1)));
     li.append(el("span", "rank-name", profileOf(d.id, s.name).name));
     li.append(el("b", "", fmt(s.score)));

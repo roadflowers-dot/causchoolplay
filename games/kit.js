@@ -133,6 +133,57 @@ window.Kit = (function () {
     ctx.restore();
   }
 
-  return { canvas: canvas, best: best, loop: loop, text: text, overlay: overlay, hud: hud,
+  // AI 와 겨루는 게임의 공통 틀: 난이도 고르기 → 대결 → 결과 → 다시 난이도 고르기
+  // o = { id, title, lines, start(api), draw(ctx, api), click(p, api), move(p, api), onKey(e, api), onKeyUp(e, api), update(dt, api) }
+  function versus(o) {
+    var W = 960, H = 540, k = canvas(W, H), ctx = k.ctx, score = best(o.id);
+    var st = "menu", level = 1, result = null, overAt = 0;
+    var HOME = { x: W - 144, y: 12, w: 130, h: 38 };
+    var TITLES = { win: "이겼어요! 🎉", lose: "아쉽게 졌어요", draw: "비겼어요" };
+    var api = {
+      W: W, H: H,
+      get level() { return level; },
+      get playing() { return st === "play"; },
+      finish: function (r) {
+        if (st !== "play") return;
+        st = "over"; result = r; overAt = performance.now();
+        if (r === "win") score.add(LEVELS[level].pts);
+      },
+    };
+    function begin(l) { level = l; st = "play"; result = null; o.start(api); }
+    o.start(api); // 메뉴 뒤에 보일 판을 미리 준비
+
+    k.cv.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      var p = k.pos(e);
+      if (st === "menu") { var l = levelAt(p, W, H); if (l >= 0) begin(l); }
+      else if (st === "over") { if (performance.now() - overAt > 600) st = "menu"; }
+      else if (inside(p, HOME)) st = "menu";
+      else if (o.click) o.click(p, api);
+    });
+    k.cv.addEventListener("pointermove", function (e) { if (st === "play" && o.move) o.move(k.pos(e), api); });
+    window.addEventListener("keydown", function (e) {
+      if (st === "menu") { var l = levelKey(e); if (l >= 0) { e.preventDefault(); begin(l); } }
+      else if (st === "over") { if ((e.code === "Space" || e.code === "Enter") && performance.now() - overAt > 600) { e.preventDefault(); st = "menu"; } }
+      else if (o.onKey) o.onKey(e, api);
+    });
+    window.addEventListener("keyup", function (e) { if (o.onKeyUp) o.onKeyUp(e, api); });
+
+    loop(function (dt) {
+      if (st === "play" && o.update) o.update(dt, api);
+      k.begin("#0e1124");
+      o.draw(ctx, api);
+      if (st === "menu") levelMenu(ctx, W, H, o.title, o.lines);
+      else {
+        text(ctx, "승점 " + score.get(), 20, 38, 22, "left");
+        text(ctx, LEVELS[level].label, 20, 64, 16, "left", "rgba(255,255,255,.7)", false);
+        if (st === "play") button(ctx, HOME, "처음으로");
+        else overlay(ctx, W, H, TITLES[result], [(result === "win" ? "+" + LEVELS[level].pts + "점  ·  " : "") + "승점 " + score.get(), "눌러서 다시 하기"]);
+      }
+      k.end();
+    });
+  }
+
+  return { versus: versus, canvas: canvas, best: best, loop: loop, text: text, overlay: overlay, hud: hud,
     LEVELS: LEVELS, levelMenu: levelMenu, levelAt: levelAt, levelKey: levelKey, button: button, inside: inside };
 })();
