@@ -2,69 +2,97 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f6ff">
   <title>중대부초 놀이터</title>
+  <script src="js/theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <!-- 로딩 -->
   <div id="view-loading" class="center-screen">
-    <p class="muted">불러오는 중…</p>
+    <div class="spinner" aria-label="불러오는 중"></div>
   </div>
 
   <!-- 로그인 화면 -->
-  <div id="view-login" class="center-screen" hidden>
-    <div class="login-card">
-      <div class="logo">🎈</div>
-      <h1>중대부초 놀이터</h1>
+  <div id="view-login" class="center-screen backdrop" hidden>
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+    <div class="hero-card">
+      <div class="logo-mark">🎈</div>
+      <h1 class="display">중대부초 놀이터</h1>
       <p class="muted">게임도 하고, 취미도 나누는 우리들의 공간</p>
-      <button id="btn-google" class="btn btn-primary">
+      <button id="btn-google" class="btn btn-primary btn-block">
         <span class="g-mark">G</span> 구글로 로그인
       </button>
-      <button id="btn-guest" class="btn btn-ghost">방문자로 들어가기</button>
-      <p class="hint">방문자는 게임만 할 수 있어요. 게시물은 구글 로그인이 필요해요.</p>
+      <button id="btn-guest" class="btn btn-soft btn-block">방문자로 들어가기</button>
+      <p class="hint">방문자는 게임만 할 수 있어요.<br>게시물은 구글 로그인이 필요해요.</p>
       <p id="login-error" class="error" hidden></p>
+    </div>
+    <button class="theme-btn floating" type="button" aria-label="밝게/어둡게 바꾸기"></button>
+  </div>
+
+  <!-- 차단된 계정 -->
+  <div id="view-banned" class="center-screen backdrop" hidden>
+    <div class="hero-card">
+      <div class="logo-mark">🚫</div>
+      <h1 class="display">이용이 정지된 계정이에요</h1>
+      <p class="muted">관리자가 이 계정의 사용을 막았어요.<br>궁금한 점은 선생님이나 관리자에게 물어보세요.</p>
+      <button class="btn btn-soft btn-block btn-logout">로그아웃</button>
     </div>
   </div>
 
   <!-- 메인 화면 -->
   <div id="view-app" hidden>
     <header class="topbar">
-      <div class="brand">🎈 중대부초 놀이터</div>
-      <nav class="tabs" role="tablist">
-        <button class="tab active" data-tab="games" role="tab">🎮 게임</button>
-        <button class="tab" data-tab="posts" role="tab">📝 게시물</button>
-        <button class="tab" data-tab="account" role="tab">👤 계정</button>
+      <div class="brand display">🎈 <span>중대부초 놀이터</span></div>
+      <nav class="tabs" id="tabs" role="tablist">
+        <button class="tab active" data-tab="games" role="tab"><i>🎮</i><span>게임</span></button>
+        <button class="tab" data-tab="posts" role="tab"><i>📝</i><span>게시물</span></button>
+        <button class="tab" data-tab="account" role="tab"><i>👤</i><span>계정</span></button>
       </nav>
-      <button class="me" id="me-chip" title="내 계정">
-        <img id="me-photo" alt="" hidden>
-        <span id="me-avatar" class="avatar-fallback"></span>
-        <span id="me-name"></span>
-      </button>
+      <div class="top-right">
+        <button class="theme-btn" type="button" aria-label="밝게/어둡게 바꾸기"></button>
+        <button class="me" id="me-chip" title="내 계정">
+          <img id="me-photo" alt="" hidden>
+          <span id="me-avatar" class="avatar-fallback"></span>
+          <span id="me-name"></span>
+        </button>
+      </div>
     </header>
 
-    <main>
+    <main id="main">
       <!-- 게임 -->
       <section id="tab-games" class="panel">
         <div id="game-list">
-          <h2>게임</h2>
+          <div class="page-head">
+            <h2 class="display">게임</h2>
+            <p class="muted">하고 싶은 게임을 골라 보세요</p>
+          </div>
           <div id="game-grid" class="grid"></div>
         </div>
         <div id="game-player" hidden>
           <div class="player-bar">
-            <button id="btn-game-back" class="btn btn-ghost btn-small">← 게임 목록</button>
-            <strong id="game-title"></strong>
-            <button id="btn-game-full" class="btn btn-ghost btn-small">전체 화면</button>
+            <button id="btn-game-back" class="btn btn-soft btn-small">← 목록</button>
+            <strong id="game-title" class="display"></strong>
+            <button id="btn-game-full" class="btn btn-soft btn-small">⛶ 전체 화면</button>
           </div>
-          <div class="frame-wrap"><iframe id="game-frame" title="게임" allow="fullscreen; autoplay"></iframe></div>
+          <div class="frame-wrap"><iframe id="game-frame" title="게임" allow="fullscreen"></iframe></div>
+          <p id="game-help" class="muted game-help"></p>
         </div>
       </section>
 
       <!-- 게시물 -->
-      <section id="tab-posts" class="panel" hidden>
-        <h2>게시물</h2>
+      <section id="tab-posts" class="panel narrow" hidden>
+        <div class="page-head">
+          <h2 class="display">게시물</h2>
+          <p class="muted">친구들과 이야기와 사진을 나눠요</p>
+        </div>
         <div id="posts-locked" class="notice" hidden>
-          <p>🔒 게시물은 구글로 로그인한 친구만 볼 수 있고 쓸 수 있어요.</p>
+          <div class="notice-icon">🔒</div>
+          <p>게시물은 구글로 로그인한 친구만<br>보고 쓸 수 있어요.</p>
           <button class="btn btn-primary btn-upgrade">구글 계정으로 로그인</button>
         </div>
         <div id="posts-area" hidden>
@@ -72,8 +100,8 @@
             <textarea id="post-text" rows="3" maxlength="2000" placeholder="무슨 이야기를 나눌까요?"></textarea>
             <div id="post-files-preview" class="file-chips"></div>
             <div class="composer-actions">
-              <label class="btn btn-ghost btn-small">
-                📎 사진·파일 추가
+              <label class="btn btn-soft btn-small">
+                📎 사진·파일
                 <input id="post-files" type="file" multiple hidden>
               </label>
               <span id="post-status" class="muted"></span>
@@ -81,25 +109,63 @@
             </div>
           </form>
           <div id="post-list"></div>
-          <p id="posts-empty" class="muted" hidden>아직 게시물이 없어요. 첫 글을 남겨 보세요!</p>
+          <p id="posts-empty" class="muted empty" hidden>아직 게시물이 없어요. 첫 글을 남겨 보세요!</p>
         </div>
       </section>
 
       <!-- 계정 -->
-      <section id="tab-account" class="panel" hidden>
-        <h2>계정</h2>
+      <section id="tab-account" class="panel narrow" hidden>
+        <div class="page-head">
+          <h2 class="display">계정</h2>
+        </div>
         <div class="card account">
-          <img id="acc-photo" alt="" hidden>
-          <span id="acc-avatar" class="avatar-fallback big"></span>
-          <div>
+          <img id="acc-photo" class="avatar-xl" alt="" hidden>
+          <span id="acc-avatar" class="avatar-fallback avatar-xl"></span>
+          <div class="acc-info">
             <div id="acc-name" class="acc-name"></div>
             <div id="acc-email" class="muted"></div>
-            <span id="acc-type" class="badge"></span>
+            <div class="badges">
+              <span id="acc-type" class="badge"></span>
+              <span id="acc-admin" class="badge badge-admin" hidden>관리자</span>
+            </div>
           </div>
         </div>
+
+        <form id="profile-form" class="card stack" hidden>
+          <h3>프로필 수정</h3>
+          <label class="field">
+            <span>닉네임</span>
+            <input id="profile-name" type="text" maxlength="20" required autocomplete="off">
+          </label>
+          <div class="field">
+            <span>프로필 사진</span>
+            <div class="row">
+              <label class="btn btn-soft btn-small">
+                사진 고르기
+                <input id="profile-photo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+              </label>
+              <button id="profile-photo-reset" type="button" class="btn btn-soft btn-small">구글 사진으로</button>
+              <button id="profile-photo-none" type="button" class="btn btn-soft btn-small">사진 없애기</button>
+            </div>
+          </div>
+          <div class="row end">
+            <span id="profile-status" class="muted"></span>
+            <button id="profile-save" type="submit" class="btn btn-primary btn-small">저장</button>
+          </div>
+        </form>
+
+        <div class="card stack">
+          <h3>화면</h3>
+          <div class="segment" id="theme-segment" role="radiogroup" aria-label="화면 모드">
+            <button type="button" data-theme-choice="light">☀️ 밝게</button>
+            <button type="button" data-theme-choice="dark">🌙 어둡게</button>
+            <button type="button" data-theme-choice="auto">📱 기기 설정</button>
+          </div>
+        </div>
+
         <div class="account-actions">
           <button id="acc-upgrade" class="btn btn-primary btn-upgrade" hidden>구글 계정으로 로그인</button>
-          <button id="btn-logout" class="btn btn-ghost">로그아웃</button>
+          <button class="btn btn-soft btn-logout">로그아웃</button>
         </div>
         <p id="acc-error" class="error" hidden></p>
       </section>

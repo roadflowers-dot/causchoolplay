@@ -8,34 +8,43 @@
 | 화면 | 설명 |
 | --- | --- |
 | 로그인 | 구글 로그인 또는 방문자(익명)로 입장 |
-| 게임 | `js/games.js` 목록의 게임을 사이트 안에서 실행 |
+| 게임 | `js/games.js` 목록의 게임 6개를 사이트 안에서 실행 |
 | 게시물 | 구글 로그인 사용자 전용. 글 · 사진 · 파일을 올리면 실시간으로 모두에게 표시 |
-| 계정 | 내 계정 정보, 방문자 → 구글 계정 전환, 로그아웃 |
+| 계정 | 닉네임 · 프로필 사진 수정, 밝게/어둡게 설정, 방문자 → 구글 계정 전환, 로그아웃 |
+| 관리 | 관리자에게만 보임. 관리자 승급/해제, 계정 차단/해제 (게시물 삭제는 게시물 탭에서) |
 
 ```
 index.html            화면 구조
-css/style.css         디자인
-js/app.js             로그인 · 탭 · 게시물 로직
-js/firebase-config.js Firebase 프로젝트 설정 (직접 입력)
+css/style.css         디자인 (밝은 모드 · 다크 모드)
+js/theme.js           밝게/어둡게 설정
+js/firebase-config.js Firebase 프로젝트 설정, 사이트 주인 확인용 값
+js/firebase.js        Firebase 연결
+js/app.js             로그인 · 탭 · 계정 · 게임 목록
+js/posts.js           게시물
+js/admin.js           관리 화면 (관리자에게만 불러와짐)
 js/games.js           게임 목록
-games/star-run/       별똥별 달리기 (오리지널 게임)
-firestore.rules       게시물 · 첨부 파일 보안 규칙
-firebase.json         Firebase 배포 설정
+games/                게임들 (kit.js 는 게임 공통 도우미)
+firestore.rules       보안 규칙 (권한 · 차단 · 게시물)
+firebase.json         배포 설정과 보안 헤더
 ```
 
-## Firebase 연결 방법
+## 게임
 
-1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트를 만들고 웹 앱을 추가합니다.
-2. 웹 앱 설정 값을 `js/firebase-config.js`에 붙여 넣습니다.
-3. **Authentication → 로그인 방법**에서 `Google`과 `익명`을 켭니다.
-4. **Firestore Database**를 만듭니다.
-5. 보안 규칙과 사이트를 배포합니다.
+별똥별 달리기, 알록달록 벽돌깨기, 우주 지킴이, 구름 계단, 꼬마 뱀, 짝 맞추기.
+모두 이 사이트를 위해 직접 만든 게임이며 키보드 · 마우스 · 터치로 할 수 있습니다.
 
-```bash
-firebase deploy
-```
+새 게임을 넣으려면 `games/` 아래에 폴더(`index.html` + `game.js`)를 만들고 `js/games.js`에 항목을 추가합니다.
+보안 헤더 때문에 HTML 안에 직접 쓴 스크립트(`<script>코드</script>`)는 실행되지 않으니 반드시 `.js` 파일로 분리하세요.
 
-다른 곳(GitHub Pages 등)에 배포한다면 **Authentication → 설정 → 승인된 도메인**에 그 주소를 추가해야 합니다.
+## 권한과 보안
+
+- **관리자**: 사이트 주인의 구글 계정은 로그인하면 자동으로 관리자가 됩니다. 주인 이메일은 코드에 그대로 적지 않고 SHA-256 값으로만 비교합니다. 다른 관리자는 관리 탭에서 올리거나 해제합니다.
+- **모든 권한 검사는 서버(`firestore.rules`)가 합니다.** 브라우저의 개발자 도구(F12)는 막을 수 없지만, 화면이나 코드를 억지로 바꿔도 서버가 요청을 거부하므로 관리자 기능을 쓸 수 없습니다. 관리 화면은 HTML에 숨겨 두지 않고 관리자에게만 만들어집니다.
+- **차단**: 차단된 계정은 정지 화면만 보이고, 서버도 게시물 읽기 · 쓰기를 거부합니다.
+- **이메일**: 다른 회원의 이메일은 관리자만 볼 수 있습니다.
+- **보안 헤더**: `firebase.json`의 Content-Security-Policy 가 허용된 곳 이외의 스크립트 실행을 막습니다.
+
+사이트 주인을 바꾸려면 새 이메일(소문자)의 SHA-256 값을 `firestore.rules`의 `isOwner()`와 `js/firebase-config.js`의 `ownerEmailHash` 두 곳에 넣습니다.
 
 ## 첨부 파일
 
@@ -45,6 +54,15 @@ firebase deploy
 - 큰 사진은 올리기 전에 자동으로 크기를 줄입니다.
 - 무료 한도는 저장 공간 1GB, 하루 읽기 5만 건 · 쓰기 2만 건입니다.
 
+## 배포
+
+Firebase 콘솔에서 Authentication(`Google`, `익명`)과 Firestore Database 를 켠 뒤, 이 폴더에서 실행합니다.
+사이트와 보안 규칙이 함께 올라갑니다.
+
+```bash
+firebase deploy
+```
+
 ## 내 컴퓨터에서 실행
 
 ```bash
@@ -52,7 +70,3 @@ python3 -m http.server 8000
 ```
 
 그 뒤 브라우저에서 `http://localhost:8000` 을 엽니다.
-
-## 게임 추가
-
-`games/` 아래에 게임 폴더(`index.html` 포함)를 만들고 `js/games.js`에 항목을 추가하면 됩니다.

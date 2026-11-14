@@ -1,33 +1,108 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ───── 누구인지 확인 ─────
     // 구글로 로그인한 사용자만 (방문자/익명 제외)
     function isGoogle() {
       return request.auth != null
         && 'google.com' in request.auth.token.firebase.identities;
     }
+    // 내 회원 정보 (서버에 저장된 값이라 브라우저에서 조작할 수 없음)
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    // 차단되지 않은 구글 사용자
+    function isActive() {
+      return isGoogle() && me().banned == false;
+    }
+    function isAdmin() {
+      return isActive() && me().role == 'admin';
+    }
+    // 사이트 주인: 이메일을 그대로 적지 않고 SHA-256 값으로만 비교
+    function isOwner() {
+      return isGoogle()
+        && request.auth.token.email_verified == true
+        && hashing.sha256(request.auth.token.email.lower()).toHexString().lower() == 'a74afa58f75b50e5740dd656a4e57c01c4659511c4ce88703db3f3267ef63d86';
+    }
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+    function validProfile(d) {
+      return d.name is string && d.name.size() >= 1 && d.name.size() <= 20
+        && d.photoURL is string && d.photoURL.size() <= 60000
+        && d.photoURL.matches('(https://.*|data:image/jpeg;base64,[A-Za-z0-9+/=]*)?');
+    }
 
-    match /posts/{postId} {
+    // ───── 회원 (닉네임 · 프로필 사진 · 권한 · 차단 여부) ─────
+    match /users/{uid} {
       allow read: if isGoogle();
-      allow create: if isGoogle()
+
+      // 처음 가입: 권한은 항상 일반 회원. 주인만 관리자로 시작할 수 있음
+      allow create: if isGoogle() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'photoURL', 'role', 'banned', 'createdAt'])
+        && request.resource.data.keys().hasAll(['name', 'photoURL', 'role', 'banned', 'createdAt'])
+        && validProfile(request.resource.data)
+        && (request.resource.data.role == 'user' || (request.resource.data.role == 'admin' && isOwner()))
+        && request.resource.data.banned == false
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if isGoogle() && (
+        // 본인: 닉네임과 프로필 사진만 (차단된 회원은 불가)
+        (request.auth.uid == uid
+          && resource.data.banned == false
+          && changedOnly(['name', 'photoURL'])
+          && validProfile(request.resource.data))
+        // 주인: 언제든 자기 자신을 관리자로 되돌릴 수 있음
+        || (request.auth.uid == uid && isOwner()
+          && changedOnly(['role', 'banned'])
+          && request.resource.data.role == 'admin'
+          && request.resource.data.banned == false)
+        // 관리자: 다른 회원의 권한과 차단 여부만
+        || (request.auth.uid != uid && isAdmin()
+          && changedOnly(['role', 'banned'])
+          && request.resource.data.role in ['user', 'admin']
+          && request.resource.data.banned is bool)
+      );
+
+      allow delete: if false;
+    }
+
+    // 이메일은 본인과 관리자만 볼 수 있음
+    match /userEmails/{uid} {
+      allow read: if isGoogle() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isGoogle() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email'])
+        && request.resource.data.email == request.auth.token.email;
+      allow delete: if false;
+    }
+
+    // ───── 게시물 ─────
+    match /posts/{postId} {
+      allow read: if isActive();
+      allow create: if isActive()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly(['uid', 'name', 'photoURL', 'text', 'files', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'files', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 20
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 2000
         && request.resource.data.files is list
         && request.resource.data.files.size() <= 5
         && request.resource.data.createdAt == request.time;
-      allow delete: if isGoogle() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+      // 글쓴이 본인 또는 관리자
+      allow delete: if isActive() && (resource.data.uid == request.auth.uid || isAdmin());
 
       // 첨부 파일 내용 (문서 하나에 파일 하나, 1MB 미만)
       match /files/{fileId} {
-        allow read: if isGoogle();
-        allow create: if isGoogle()
+        allow read: if isActive();
+        allow create: if isActive()
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.keys().hasOnly(['uid', 'data'])
           && request.resource.data.data is bytes
           && request.resource.data.data.size() <= 1000000;
-        allow delete: if isGoogle() && resource.data.uid == request.auth.uid;
+        allow update: if false;
+        allow delete: if isActive() && (resource.data.uid == request.auth.uid || isAdmin());
       }
     }
   }
