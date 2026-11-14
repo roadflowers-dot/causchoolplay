@@ -7,6 +7,8 @@
   let state = "ready"; // ready | play | dead
   let star, obstacles, sparks, speed, dist, nextGap, best, bgT, deadAt;
   try { best = Number(localStorage.getItem("star-run-best")) || 0; } catch { best = 0; }
+  const report = (n) => { try { if (parent !== window) parent.postMessage({ type: "score", value: n }, location.origin); } catch {} };
+  if (best > 0) report(best);
 
   function fit() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -91,7 +93,7 @@
       state = "dead";
       deadAt = performance.now();
       const score = Math.floor(dist / 10);
-      if (score > best) { best = score; try { localStorage.setItem("star-run-best", String(best)); } catch {} }
+      if (score > best) { best = score; try { localStorage.setItem("star-run-best", String(best)); } catch {} report(best); }
     }
   }
 

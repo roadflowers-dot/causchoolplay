@@ -40,14 +40,59 @@ window.Kit = (function () {
     };
   }
 
+  // 새 기록을 사이트(순위표)에 알려 줍니다
+  function report(n) {
+    try { if (window.parent !== window) window.parent.postMessage({ type: "score", value: n }, window.location.origin); } catch (e) {}
+  }
+
   function best(key) {
     var v = 0;
     try { v = Number(localStorage.getItem(key)) || 0; } catch (e) {}
+    if (v > 0) report(v);
     return {
       get: function () { return v; },
-      set: function (n) { v = n; try { localStorage.setItem(key, String(n)); } catch (e) {} },
+      set: function (n) { v = n; try { localStorage.setItem(key, String(n)); } catch (e) {} report(n); },
+      add: function (n) { this.set(v + n); },
     };
   }
+
+  // AI 와 겨루는 게임의 난이도 고르기
+  var LEVELS = [
+    { label: "쉬움", pts: 1, color: "#51cf66" },
+    { label: "보통", pts: 2, color: "#fcc419" },
+    { label: "어려움", pts: 3, color: "#ff6b6b" },
+  ];
+  function levelRect(i, W, H) { return { x: W / 2 - 290 + i * 200, y: H / 2 + 50, w: 180, h: 70 }; }
+  function levelMenu(ctx, W, H, title, lines) {
+    ctx.fillStyle = "rgba(8, 10, 30, .72)";
+    ctx.fillRect(0, 0, W, H);
+    text(ctx, title, W / 2, H / 2 - 110, 54, "center");
+    for (var i = 0; i < lines.length; i++) text(ctx, lines[i], W / 2, H / 2 - 62 + i * 32, 22, "center", "#fff", false);
+    text(ctx, "난이도를 골라요 (숫자 키 1 · 2 · 3)", W / 2, H / 2 + 30, 20, "center", "rgba(255,255,255,.75)", false);
+    LEVELS.forEach(function (l, i) {
+      var r = levelRect(i, W, H);
+      ctx.fillStyle = l.color;
+      ctx.beginPath(); ctx.roundRect(r.x, r.y, r.w, r.h, 18); ctx.fill();
+      text(ctx, l.label, r.x + r.w / 2, r.y + 36, 26, "center", "#1b2142");
+      text(ctx, "이기면 +" + l.pts + "점", r.x + r.w / 2, r.y + 58, 15, "center", "rgba(27,33,66,.75)", false);
+    });
+  }
+  function levelAt(p, W, H) {
+    for (var i = 0; i < LEVELS.length; i++) {
+      var r = levelRect(i, W, H);
+      if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) return i;
+    }
+    return -1;
+  }
+  function levelKey(e) { return { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[e.code] ?? -1; }
+
+  // 둥근 버튼 하나 (예: "다시 하기")
+  function button(ctx, r, label) {
+    ctx.fillStyle = "rgba(255,255,255,.16)";
+    ctx.beginPath(); ctx.roundRect(r.x, r.y, r.w, r.h, 14); ctx.fill();
+    text(ctx, label, r.x + r.w / 2, r.y + r.h / 2 + 7, 20, "center");
+  }
+  function inside(p, r) { return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; }
 
   function loop(step) {
     var last = performance.now();
@@ -88,5 +133,6 @@ window.Kit = (function () {
     ctx.restore();
   }
 
-  return { canvas: canvas, best: best, loop: loop, text: text, overlay: overlay, hud: hud };
+  return { canvas: canvas, best: best, loop: loop, text: text, overlay: overlay, hud: hud,
+    LEVELS: LEVELS, levelMenu: levelMenu, levelAt: levelAt, levelKey: levelKey, button: button, inside: inside };
 })();

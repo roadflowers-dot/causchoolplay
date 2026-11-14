@@ -250,6 +250,41 @@ main { max-width: 1040px; margin: 0 auto; padding: 28px 20px 80px; }
 .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: .85rem; padding: 6px 8px; border-radius: 8px; }
 .del:hover { color: var(--danger); background: var(--danger-soft); }
 
+.post-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.react {
+  display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid transparent;
+  background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 5px 11px;
+  font-size: .9rem; cursor: pointer; min-height: 34px;
+}
+.react b { font-size: .8rem; color: var(--muted); }
+.react:hover { background: var(--primary-soft); }
+.react.on { background: var(--primary-soft); border-color: var(--primary); }
+.react.on b { color: var(--primary); }
+.comment-toggle { margin-left: auto; font-weight: 600; font-size: .85rem; }
+.comments { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.comment { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.comment img, .comment .avatar-fallback { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; }
+.comment-body { flex: 1; min-width: 0; background: var(--surface-2); border-radius: 14px; padding: 7px 12px; }
+.comment-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: .85rem; }
+.comment-top span { color: var(--muted); font-size: .74rem; }
+.comment-body .post-text { font-size: .93rem; }
+.comment-empty { font-size: .88rem; margin-bottom: 10px; }
+.comment-form { display: flex; gap: 8px; }
+.comment-form input {
+  flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: 999px;
+  padding: 8px 14px; background: var(--surface-2); color: var(--ink);
+}
+.comment-form input:focus { outline: 0; border-color: var(--primary); background: var(--surface); }
+
+/* ───── 순위표 ───── */
+.rank-box { max-width: 520px; margin: 16px auto 0; }
+.rank-list { list-style: none; margin: 10px 0 8px; padding: 0; }
+.rank-list li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; }
+.rank-list li.me { background: var(--primary-soft); }
+.rank-no { width: 28px; text-align: center; font-weight: 800; color: var(--muted); }
+.rank-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.rank-box .muted { font-size: .88rem; }
+
 /* ───── 계정 ───── */
 .account { display: flex; align-items: center; gap: 16px; }
 .acc-info { min-width: 0; }
@@ -282,6 +317,13 @@ main { max-width: 1040px; margin: 0 auto; padding: 28px 20px 80px; }
 .user-row .who strong { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .user-row .who span.mail { color: var(--muted); font-size: .84rem; overflow-wrap: anywhere; }
 .user-row .acts { display: flex; gap: 6px; }
+
+.section-title { margin: 22px 0 10px; font-size: 1.05rem; }
+.report { margin-bottom: 12px; }
+.report-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.report-content { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px; }
+.report-reasons { margin: 10px 0; padding-left: 18px; font-size: .9rem; color: var(--muted); }
+.report-reasons b { color: var(--ink); }
 
 /* ───── 모바일: 탭을 아래로 ───── */
 @media (max-width: 720px) {

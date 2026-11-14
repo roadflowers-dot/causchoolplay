@@ -9,6 +9,8 @@ import { auth, db, configured, isGoogleUser, setAvatar, el } from "./firebase.js
 import { ownerEmailHash } from "./firebase-config.js";
 import { games } from "./games.js";
 import * as posts from "./posts.js";
+import * as scores from "./scores.js";
+import { setProfile } from "./profiles.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -131,6 +133,7 @@ function teardown() {
   if (unsubMe) { unsubMe(); unsubMe = null; }
   posts.stop();
   unmountAdmin();
+  closeGame();
   state.profile = null;
   state.admin = false;
   pendingPhoto = undefined;
@@ -223,7 +226,7 @@ function render() {
   $("posts-locked").hidden = state.google;
   $("posts-area").hidden = !state.google;
   if (state.google) {
-    posts.setProfile(state.user.uid, p);
+    setProfile(state.user.uid, p);
     posts.start(state);
   } else {
     posts.stop();
@@ -309,7 +312,7 @@ async function mountAdmin() {
   const panel = adminPanel;
   try {
     adminModule = await import("./admin.js");
-    if (adminPanel === panel) adminModule.mount(panel, state);
+    if (adminPanel === panel) adminModule.mount(panel, state, adminTab);
   } catch {
     panel.textContent = "관리 화면을 불러오지 못했어요.";
   }
@@ -339,16 +342,19 @@ function openGame(g) {
   $("game-title").textContent = g.title;
   $("game-help").textContent = g.help;
   $("game-frame").src = g.url;
+  scores.open(g, state);
   $("game-list").hidden = true;
   $("game-player").hidden = false;
   window.scrollTo(0, 0);
   $("game-frame").focus();
 }
-$("btn-game-back").addEventListener("click", () => {
+function closeGame() {
+  scores.close();
   $("game-frame").src = "about:blank";
   $("game-player").hidden = true;
   $("game-list").hidden = false;
-});
+}
+$("btn-game-back").addEventListener("click", closeGame);
 $("btn-game-full").addEventListener("click", () => {
   $("game-frame").requestFullscreen?.();
 });
