@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isGoogle() {
+      return request.auth != null
+        && 'google.com' in request.auth.token.firebase.identities;
+    }
+
+    match /posts/{uid}/{fileName} {
+      allow read: if isGoogle();
+      allow create: if isGoogle()
+        && request.auth.uid == uid
+        && request.resource.size <= 20 * 1024 * 1024;
+      allow delete: if isGoogle() && request.auth.uid == uid;
+    }
+  }
+}

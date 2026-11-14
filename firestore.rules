@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 구글로 로그인한 사용자만 (방문자/익명 제외)
+    function isGoogle() {
+      return request.auth != null
+        && 'google.com' in request.auth.token.firebase.identities;
+    }
+
+    match /posts/{postId} {
+      allow read: if isGoogle();
+      allow create: if isGoogle()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'photoURL', 'text', 'files', 'createdAt'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.files is list
+        && request.resource.data.files.size() <= 5
+        && request.resource.data.createdAt == request.time;
+      allow delete: if isGoogle() && resource.data.uid == request.auth.uid;
+    }
+  }
+}
