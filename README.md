@@ -23,6 +23,10 @@ js/app.js             로그인 · 탭 · 계정 · 게임 목록
 js/posts.js           게시물
 js/admin.js           관리 화면 (관리자에게만 불러와짐)
 js/games.js           게임 목록
+js/install.js         앱 설치 버튼
+manifest.webmanifest  앱 설치 정보 (이름 · 아이콘)
+sw.js                 앱 설치용 서비스 워커
+icons/                앱 아이콘
 games/                게임들 (kit.js 는 게임 공통 도우미)
 firestore.rules       보안 규칙 (권한 · 차단 · 게시물)
 firebase.json         배포 설정과 보안 헤더
