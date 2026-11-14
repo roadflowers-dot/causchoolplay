@@ -1,7 +1,7 @@
 # 중대부초 놀이터
 
 중대부초 학생들이 게임과 취미 생활을 함께 즐기는 웹사이트입니다.
-빌드 과정이 없는 정적 사이트이며 Firebase(로그인 · Firestore · Storage)를 사용합니다.
+빌드 과정이 없는 정적 사이트이며 Firebase(로그인 · Firestore)의 무료(Spark) 요금제만으로 동작합니다.
 
 ## 구성
 
@@ -19,8 +19,7 @@ js/app.js             로그인 · 탭 · 게시물 로직
 js/firebase-config.js Firebase 프로젝트 설정 (직접 입력)
 js/games.js           게임 목록
 games/star-run/       별똥별 달리기 (오리지널 게임)
-firestore.rules       게시물 보안 규칙
-storage.rules         첨부 파일 보안 규칙
+firestore.rules       게시물 · 첨부 파일 보안 규칙
 firebase.json         Firebase 배포 설정
 ```
 
@@ -29,7 +28,7 @@ firebase.json         Firebase 배포 설정
 1. [Firebase 콘솔](https://console.firebase.google.com)에서 프로젝트를 만들고 웹 앱을 추가합니다.
 2. 웹 앱 설정 값을 `js/firebase-config.js`에 붙여 넣습니다.
 3. **Authentication → 로그인 방법**에서 `Google`과 `익명`을 켭니다.
-4. **Firestore Database**와 **Storage**를 만듭니다. (Storage는 Blaze 요금제가 필요합니다.)
+4. **Firestore Database**를 만듭니다.
 5. 보안 규칙과 사이트를 배포합니다.
 
 ```bash
@@ -37,6 +36,14 @@ firebase deploy
 ```
 
 다른 곳(GitHub Pages 등)에 배포한다면 **Authentication → 설정 → 승인된 도메인**에 그 주소를 추가해야 합니다.
+
+## 첨부 파일
+
+유료인 Storage 대신 Firestore 문서에 파일을 직접 저장합니다.
+
+- 파일 하나는 900KB까지, 한 게시물에 5개까지 올릴 수 있습니다.
+- 큰 사진은 올리기 전에 자동으로 크기를 줄입니다.
+- 무료 한도는 저장 공간 1GB, 하루 읽기 5만 건 · 쓰기 2만 건입니다.
 
 ## 내 컴퓨터에서 실행
 

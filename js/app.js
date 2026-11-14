@@ -4,17 +4,16 @@ import {
   signInAnonymously, linkWithPopup, signOut,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, deleteDoc, doc, query, orderBy, limit,
-  onSnapshot, serverTimestamp,
+  getFirestore, collection, doc, getDoc, writeBatch, query, orderBy, limit,
+  onSnapshot, serverTimestamp, Bytes,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import {
-  getStorage, ref, uploadBytes, getDownloadURL, deleteObject,
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
 import { firebaseConfig } from "./firebase-config.js";
 import { games } from "./games.js";
 
 const $ = (id) => document.getElementById(id);
-const MAX_FILE_BYTES = 20 * 1024 * 1024;
+// 첨부 파일은 Firestore 문서에 직접 저장합니다(무료 요금제). 문서 하나가 1MB까지라 파일 하나는 900KB까지입니다.
+const MAX_FILE_BYTES = 900 * 1024;
+const IMAGE_TYPES = /^image\/(png|jpeg|gif|webp)$/;
 const MAX_FILES = 5;
 
 const views = ["view-loading", "view-login", "view-app"];
@@ -28,12 +27,11 @@ function showError(el, msg) {
 
 // ---------- Firebase ----------
 const configured = !firebaseConfig.apiKey.startsWith("YOUR_");
-let auth, db, storage;
+let auth, db;
 if (configured) {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
 }
 
 const isGoogleUser = (u) => !!u && u.providerData.some((p) => p.providerId === "google.com");
@@ -231,18 +229,19 @@ function renderPost(d) {
   }
 
   const files = Array.isArray(p.files) ? p.files : [];
-  const images = files.filter((f) => /^image\/(png|jpeg|gif|webp)$/.test(f.type));
+  const images = files.filter((f) => IMAGE_TYPES.test(f.type));
   const others = files.filter((f) => !images.includes(f));
   if (images.length) {
     const media = document.createElement("div");
     media.className = "post-media";
     for (const f of images) {
       const a = document.createElement("a");
-      a.href = f.url; a.target = "_blank"; a.rel = "noopener";
+      a.target = "_blank"; a.rel = "noopener";
       const im = document.createElement("img");
-      im.src = f.url; im.alt = f.name; im.loading = "lazy";
+      im.alt = f.name;
       a.append(im);
       media.append(a);
+      loadFile(d.id, f).then((url) => { im.src = url; a.href = url; }).catch(() => { im.alt = "사진을 불러오지 못했어요"; });
     }
     el.append(media);
   }
@@ -251,8 +250,17 @@ function renderPost(d) {
     box.className = "post-files";
     for (const f of others) {
       const a = document.createElement("a");
-      a.href = f.url; a.target = "_blank"; a.rel = "noopener";
+      a.href = "#";
       a.textContent = "📎 " + f.name + " (" + formatSize(f.size) + ")";
+      a.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          const dl = document.createElement("a");
+          dl.href = await loadFile(d.id, f);
+          dl.download = f.name;
+          dl.click();
+        } catch { alert("파일을 불러오지 못했어요."); }
+      });
       box.append(a);
     }
     el.append(box);
@@ -260,16 +268,57 @@ function renderPost(d) {
   return el;
 }
 
+// 첨부 파일 내용은 posts/{글}/files/{파일} 문서에 들어 있어요. 한 번 받은 파일은 다시 받지 않아요.
+const fileCache = new Map();
+function loadFile(postId, f) {
+  const key = postId + "/" + f.id;
+  if (!fileCache.has(key)) {
+    const job = getDoc(doc(db, "posts", postId, "files", f.id)).then((snap) => {
+      if (!snap.exists()) throw new Error("missing");
+      // 사진이 아닌 파일은 브라우저가 열지 않고 내려받기만 하도록 형식을 가립니다.
+      const type = IMAGE_TYPES.test(f.type) ? f.type : "application/octet-stream";
+      return URL.createObjectURL(new Blob([snap.data().data.toUint8Array()], { type }));
+    });
+    job.catch(() => fileCache.delete(key));
+    fileCache.set(key, job);
+  }
+  return fileCache.get(key);
+}
+
 async function removePost(id, p) {
   if (!confirm("이 게시물을 삭제할까요?")) return;
   try {
-    await deleteDoc(doc(db, "posts", id));
-    for (const f of p.files || []) {
-      deleteObject(ref(storage, f.path)).catch(() => {});
-    }
+    const batch = writeBatch(db);
+    for (const f of p.files || []) batch.delete(doc(db, "posts", id, "files", f.id));
+    batch.delete(doc(db, "posts", id));
+    await batch.commit();
   } catch (e) {
     alert("삭제하지 못했어요. (" + e.code + ")");
   }
+}
+
+// 큰 사진은 크기를 줄여서 900KB 안에 들어가게 만들어요. (움직이는 GIF는 그대로 둡니다)
+async function shrinkImage(file) {
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type) || file.size <= 300 * 1024) return file;
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch { return file; }
+  let side = 1600, quality = 0.82, out = null;
+  for (let i = 0; i < 6; i++) {
+    const k = Math.min(1, side / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k);
+    c.height = Math.round(bmp.height * k);
+    const g = c.getContext("2d");
+    g.fillStyle = "#fff";
+    g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(bmp, 0, 0, c.width, c.height);
+    out = await new Promise((res) => c.toBlob(res, "image/jpeg", quality));
+    if (out && out.size <= MAX_FILE_BYTES) break;
+    side = Math.round(side * 0.75);
+    quality -= 0.08;
+  }
+  if (!out || out.size >= file.size) return file;
+  return new File([out], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
 function renderPicked() {
@@ -284,15 +333,17 @@ function renderPicked() {
   }));
 }
 
-$("post-files").addEventListener("change", (e) => {
+$("post-files").addEventListener("change", async (e) => {
   const status = $("post-status");
   status.textContent = "";
-  for (const f of e.target.files) {
-    if (f.size > MAX_FILE_BYTES) { status.textContent = "파일 하나는 20MB까지 올릴 수 있어요."; continue; }
+  const chosen = [...e.target.files];
+  e.target.value = "";
+  for (const raw of chosen) {
     if (pickedFiles.length >= MAX_FILES) { status.textContent = "파일은 한 번에 " + MAX_FILES + "개까지 올릴 수 있어요."; break; }
+    const f = await shrinkImage(raw);
+    if (f.size > MAX_FILE_BYTES) { status.textContent = "파일 하나는 900KB까지 올릴 수 있어요. (사진은 자동으로 줄여 줘요)"; continue; }
     pickedFiles.push(f);
   }
-  e.target.value = "";
   renderPicked();
 });
 
@@ -304,31 +355,32 @@ $("post-form").addEventListener("submit", async (e) => {
   if (!text && !pickedFiles.length) { status.textContent = "글이나 파일을 넣어 주세요."; return; }
 
   $("post-submit").disabled = true;
-  const uploaded = [];
+  status.textContent = "올리는 중…";
   try {
-    for (let i = 0; i < pickedFiles.length; i++) {
-      const f = pickedFiles[i];
-      status.textContent = "올리는 중… (" + (i + 1) + "/" + pickedFiles.length + ")";
-      const path = "posts/" + user.uid + "/" + Date.now() + "_" + i + "_" + f.name.replace(/[^\w.\-가-힣]/g, "_");
-      const r = ref(storage, path);
-      await uploadBytes(r, f, { contentType: f.type || "application/octet-stream" });
-      uploaded.push({ name: f.name, type: f.type || "", size: f.size, path, url: await getDownloadURL(r) });
+    // 글과 첨부 파일을 한꺼번에 저장해요. 하나라도 실패하면 아무것도 올라가지 않아요.
+    const batch = writeBatch(db);
+    const postRef = doc(collection(db, "posts"));
+    const files = [];
+    for (const f of pickedFiles) {
+      const fileRef = doc(collection(postRef, "files"));
+      batch.set(fileRef, { uid: user.uid, data: Bytes.fromUint8Array(new Uint8Array(await f.arrayBuffer())) });
+      files.push({ id: fileRef.id, name: f.name, type: f.type || "", size: f.size });
     }
     const p = profileOf(user);
-    await addDoc(collection(db, "posts"), {
+    batch.set(postRef, {
       uid: user.uid,
       name: p.name,
       photoURL: p.photo,
       text,
-      files: uploaded,
+      files,
       createdAt: serverTimestamp(),
     });
+    await batch.commit();
     $("post-text").value = "";
     pickedFiles = [];
     renderPicked();
     status.textContent = "";
   } catch (err) {
-    for (const f of uploaded) deleteObject(ref(storage, f.path)).catch(() => {});
     status.textContent = "올리지 못했어요. (" + (err.code || err.message) + ")";
   } finally {
     $("post-submit").disabled = false;

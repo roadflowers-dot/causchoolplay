@@ -18,6 +18,17 @@ service cloud.firestore {
         && request.resource.data.files.size() <= 5
         && request.resource.data.createdAt == request.time;
       allow delete: if isGoogle() && resource.data.uid == request.auth.uid;
+
+      // 첨부 파일 내용 (문서 하나에 파일 하나, 1MB 미만)
+      match /files/{fileId} {
+        allow read: if isGoogle();
+        allow create: if isGoogle()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid', 'data'])
+          && request.resource.data.data is bytes
+          && request.resource.data.data.size() <= 1000000;
+        allow delete: if isGoogle() && resource.data.uid == request.auth.uid;
+      }
     }
   }
 }
