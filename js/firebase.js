@@ -20,9 +20,7 @@ if (configured) {
   }
 }
 
-// 구글이나 애플로 로그인한 사람이 정식 회원입니다 (방문자는 제외)
-export const MEMBER_PROVIDERS = ["google.com", "apple.com"];
-export const isMember = (u) => !!u && u.providerData.some((p) => MEMBER_PROVIDERS.includes(p.providerId));
+export const isGoogleUser = (u) => !!u && u.providerData.some((p) => p.providerId === "google.com");
 
 // 프로필 사진과 이름 첫 글자 표시
 export function setAvatar(imgEl, fallbackEl, photo, name) {

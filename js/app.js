@@ -1,11 +1,11 @@
 import {
-  onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signInAnonymously,
+  onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously,
   linkWithPopup, signInWithCredential, signOut,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {
   doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { auth, db, configured, isMember, MEMBER_PROVIDERS, setAvatar, el } from "./firebase.js";
+import { auth, db, configured, isGoogleUser, setAvatar, el } from "./firebase.js";
 import { ownerEmailHash } from "./firebase-config.js";
 import { games } from "./games.js";
 import * as posts from "./posts.js";
@@ -16,7 +16,7 @@ const $ = (id) => document.getElementById(id);
 
 // 지금 로그인한 사람의 상태. 권한(admin)과 차단 여부는 서버(Firestore)에서 받아 온 값이며,
 // 이 값을 브라우저에서 바꿔도 서버 규칙이 막기 때문에 실제 권한은 생기지 않습니다.
-const state = { user: null, member: false, profile: null, admin: false };
+const state = { user: null, google: false, profile: null, admin: false };
 
 const views = ["view-loading", "view-login", "view-banned", "view-app"];
 function showView(id) {
@@ -54,22 +54,11 @@ window.addEventListener("themechange", renderThemeChoice);
 renderThemeChoice();
 
 // ───────── 로그인 ─────────
-function providerFor(name) {
-  if (name === "apple") {
-    const p = new OAuthProvider("apple.com");
-    p.addScope("email");
-    p.addScope("name");
-    return p;
-  }
-  return new GoogleAuthProvider();
-}
-for (const [id, name] of [["btn-google", "google"], ["btn-apple", "apple"]]) {
-  $(id).addEventListener("click", async () => {
-    showError($("login-error"), "");
-    try { await signInWithPopup(auth, providerFor(name)); }
-    catch (e) { showError($("login-error"), authMessage(e)); }
-  });
-}
+$("btn-google").addEventListener("click", async () => {
+  showError($("login-error"), "");
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { showError($("login-error"), authMessage(e)); }
+});
 $("btn-guest").addEventListener("click", async () => {
   showError($("login-error"), "");
   try { await signInAnonymously(auth); }
@@ -77,18 +66,18 @@ $("btn-guest").addEventListener("click", async () => {
 });
 document.querySelectorAll(".btn-logout").forEach((b) => b.addEventListener("click", () => signOut(auth)));
 
-// 방문자 → 구글 · 애플 계정으로 전환
+// 방문자 → 구글 계정으로 전환
 document.querySelectorAll(".btn-upgrade").forEach((b) => b.addEventListener("click", async () => {
   showError($("acc-error"), "");
   try {
-    await linkWithPopup(auth.currentUser, providerFor(b.dataset.provider));
+    await linkWithPopup(auth.currentUser, new GoogleAuthProvider());
     await auth.currentUser.reload();
-    await auth.currentUser.getIdToken(true); // 서버 규칙이 회원 로그인을 알아보도록 토큰 갱신
+    await auth.currentUser.getIdToken(true); // 서버 규칙이 구글 로그인을 알아보도록 토큰 갱신
     await handleUser(auth.currentUser);
   } catch (e) {
-    // 이미 가입한 계정이면 그 계정으로 바로 로그인
+    // 이미 가입한 구글 계정이면 그 계정으로 바로 로그인
     if (e?.code === "auth/credential-already-in-use") {
-      const cred = b.dataset.provider === "apple" ? OAuthProvider.credentialFromError(e) : GoogleAuthProvider.credentialFromError(e);
+      const cred = GoogleAuthProvider.credentialFromError(e);
       if (cred) {
         try { await signInWithCredential(auth, cred); return; } catch (e2) { e = e2; }
       }
@@ -102,19 +91,18 @@ async function sha256Hex(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-function accountInfo(user) {
-  const g = user.providerData.find((p) => MEMBER_PROVIDERS.includes(p.providerId)) || {};
+function googleInfo(user) {
+  const g = user.providerData.find((p) => p.providerId === "google.com") || {};
   return {
     name: (user.displayName || g.displayName || "").trim().slice(0, 20) || "친구",
     email: user.email || g.email || "",
     photo: /^https:\/\//.test(user.photoURL || g.photoURL || "") ? (user.photoURL || g.photoURL) : "",
-    provider: g.providerId || "",
   };
 }
 
-// 구글 · 애플로 처음 들어온 사람은 회원 정보를 만들어 둡니다. (권한은 서버 규칙이 정합니다)
+// 구글로 처음 들어온 사람은 회원 정보를 만들어 둡니다. (권한은 서버 규칙이 정합니다)
 async function ensureUserDoc(user) {
-  const info = accountInfo(user);
+  const info = googleInfo(user);
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
   const owner = !!info.email && (await sha256Hex(info.email.toLowerCase())) === ownerEmailHash;
@@ -156,10 +144,10 @@ async function handleUser(user) {
   const mine = ++session;
   teardown();
   state.user = user;
-  state.member = isMember(user);
+  state.google = isGoogleUser(user);
   if (!user) { showView("view-login"); return; }
 
-  if (!state.member) {
+  if (!state.google) {
     state.profile = { name: "방문자", photoURL: "" };
     render();
     selectTab("games");
@@ -208,7 +196,6 @@ async function handleUser(user) {
 if (!configured) {
   showView("view-login");
   $("btn-google").disabled = true;
-  $("btn-apple").disabled = true;
   $("btn-guest").disabled = true;
   showError($("login-error"), "아직 Firebase가 연결되지 않았어요. js/firebase-config.js 에 프로젝트 설정을 넣어 주세요.");
 } else {
@@ -221,26 +208,24 @@ let pendingPhoto; // undefined = 바꾸지 않음, 문자열 = 새 사진(빈 �
 
 function render() {
   const p = state.profile;
-  const info = state.member ? accountInfo(state.user) : null;
+  const info = state.google ? googleInfo(state.user) : null;
   $("me-name").textContent = p.name;
   setAvatar($("me-photo"), $("me-avatar"), p.photoURL, p.name);
   $("acc-name").textContent = p.name;
-  $("acc-email").textContent = state.member ? info.email : "방문자는 이메일이 없어요";
-  $("acc-type").textContent = !state.member ? "방문자" : info.provider === "apple.com" ? "애플 계정" : "구글 계정";
-  $("profile-photo-reset").hidden = !info?.photo; // 애플 계정은 기본 사진이 없어요
+  $("acc-email").textContent = state.google ? info.email : "방문자는 이메일이 없어요";
+  $("acc-type").textContent = state.google ? "구글 계정" : "방문자";
   $("acc-admin").hidden = !state.admin;
   setAvatar($("acc-photo"), $("acc-avatar"), pendingPhoto ?? p.photoURL, p.name);
-  $("acc-upgrade").hidden = state.member;
-  $("acc-upgrade-apple").hidden = state.member;
-  $("profile-form").hidden = !state.member;
-  if (state.member && shownName !== p.name) {
+  $("acc-upgrade").hidden = state.google;
+  $("profile-form").hidden = !state.google;
+  if (state.google && shownName !== p.name) {
     $("profile-name").value = p.name;
     shownName = p.name;
   }
 
-  $("posts-locked").hidden = state.member;
-  $("posts-area").hidden = !state.member;
-  if (state.member) {
+  $("posts-locked").hidden = state.google;
+  $("posts-area").hidden = !state.google;
+  if (state.google) {
     setProfile(state.user.uid, p);
     posts.start(state);
   } else {
@@ -274,7 +259,7 @@ $("profile-photo").addEventListener("change", async (e) => {
   try { previewPhoto(await squarePhoto(file), "저장을 누르면 바뀌어요."); }
   catch { $("profile-status").textContent = "이 사진은 쓸 수 없어요. 다른 사진을 골라 주세요."; }
 });
-$("profile-photo-reset").addEventListener("click", () => previewPhoto(accountInfo(state.user).photo, "저장을 누르면 바뀌어요."));
+$("profile-photo-reset").addEventListener("click", () => previewPhoto(googleInfo(state.user).photo, "저장을 누르면 바뀌어요."));
 $("profile-photo-none").addEventListener("click", () => previewPhoto("", "저장을 누르면 바뀌어요."));
 
 $("profile-form").addEventListener("submit", async (e) => {

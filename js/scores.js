@@ -23,8 +23,8 @@ export function open(g, appState) {
   game = g;
   state = appState;
   $("rank-box").hidden = false;
-  if (!state.member) {
-    $("rank-note").textContent = "구글이나 애플로 로그인하면 내 기록이 순위표에 올라가요.";
+  if (!state.google) {
+    $("rank-note").textContent = "구글로 로그인하면 내 기록이 순위표에 올라가요.";
     $("rank-list").replaceChildren();
     return;
   }
@@ -79,7 +79,7 @@ function render() {
 }
 
 async function submit(value) {
-  if (!game || !state?.member) return;
+  if (!game || !state?.google) return;
   const v = Math.floor(value);
   if (!(v > 0) || v > 10000000) return;
   if (!mineLoaded) { pending = pending == null || better(v, pending) ? v : pending; return; }
