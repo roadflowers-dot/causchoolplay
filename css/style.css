@@ -77,6 +77,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 .btn-soft { background: var(--surface-2); color: var(--ink); }
 .btn-soft:hover:not(:disabled) { background: var(--primary-soft); }
+.btn-apple { background: #000; color: #fff; }
+:root[data-theme="dark"] .btn-apple { background: #fff; color: #000; }
 .btn-danger { background: var(--danger-soft); color: var(--danger); }
 .btn-small { padding: 8px 14px; font-size: .88rem; }
 .btn-block { width: 100%; margin-top: 12px; }

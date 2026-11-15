@@ -2,25 +2,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ───── 누구인지 확인 ─────
-    // 구글로 로그인한 사용자만 (방문자/익명 제외)
-    function isGoogle() {
+    // 구글이나 애플로 로그인한 사용자만 (방문자/익명 제외)
+    function isMember() {
       return request.auth != null
-        && 'google.com' in request.auth.token.firebase.identities;
+        && ('google.com' in request.auth.token.firebase.identities
+          || 'apple.com' in request.auth.token.firebase.identities);
     }
     // 내 회원 정보 (서버에 저장된 값이라 브라우저에서 조작할 수 없음)
     function me() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    // 차단되지 않은 구글 사용자
+    // 차단되지 않은 회원
     function isActive() {
-      return isGoogle() && me().banned == false;
+      return isMember() && me().banned == false;
     }
     function isAdmin() {
       return isActive() && me().role == 'admin';
     }
     // 사이트 주인: 이메일을 그대로 적지 않고 SHA-256 값으로만 비교
     function isOwner() {
-      return isGoogle()
+      return isMember()
         && request.auth.token.email_verified == true
         && hashing.sha256(request.auth.token.email.lower()).toHexString().lower() == 'a74afa58f75b50e5740dd656a4e57c01c4659511c4ce88703db3f3267ef63d86';
     }
@@ -35,10 +36,10 @@ service cloud.firestore {
 
     // ───── 회원 (닉네임 · 프로필 사진 · 권한 · 차단 여부) ─────
     match /users/{uid} {
-      allow read: if isGoogle();
+      allow read: if isMember();
 
       // 처음 가입: 권한은 항상 일반 회원. 주인만 관리자로 시작할 수 있음
-      allow create: if isGoogle() && request.auth.uid == uid
+      allow create: if isMember() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['name', 'photoURL', 'role', 'banned', 'createdAt'])
         && request.resource.data.keys().hasAll(['name', 'photoURL', 'role', 'banned', 'createdAt'])
         && validProfile(request.resource.data)
@@ -46,7 +47,7 @@ service cloud.firestore {
         && request.resource.data.banned == false
         && request.resource.data.createdAt == request.time;
 
-      allow update: if isGoogle() && (
+      allow update: if isMember() && (
         // 본인: 닉네임과 프로필 사진만 (차단된 회원은 불가)
         (request.auth.uid == uid
           && resource.data.banned == false
@@ -69,8 +70,8 @@ service cloud.firestore {
 
     // 이메일은 본인과 관리자만 볼 수 있음
     match /userEmails/{uid} {
-      allow read: if isGoogle() && (request.auth.uid == uid || isAdmin());
-      allow create, update: if isGoogle() && request.auth.uid == uid
+      allow read: if isMember() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isMember() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['email'])
         && request.resource.data.email == request.auth.token.email;
       allow delete: if false;

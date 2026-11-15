@@ -33,9 +33,10 @@
       <button id="btn-google" class="btn btn-primary btn-block">
         <span class="g-mark">G</span> 구글로 로그인
       </button>
+      <button id="btn-apple" class="btn btn-apple btn-block">Apple로 로그인</button>
       <button id="btn-guest" class="btn btn-soft btn-block">방문자로 들어가기</button>
       <button class="btn btn-soft btn-block btn-install" type="button" hidden>📲 앱 설치하기</button>
-      <p class="hint">방문자는 게임만 할 수 있어요.<br>게시물은 구글 로그인이 필요해요.</p>
+      <p class="hint">방문자는 게임만 할 수 있어요.<br>게시물은 구글이나 애플 로그인이 필요해요.</p>
       <p id="login-error" class="error" hidden></p>
     </div>
     <button class="theme-btn floating" type="button" aria-label="밝게/어둡게 바꾸기"></button>
@@ -104,8 +105,11 @@
         </div>
         <div id="posts-locked" class="notice" hidden>
           <div class="notice-icon">🔒</div>
-          <p>게시물은 구글로 로그인한 친구만<br>보고 쓸 수 있어요.</p>
-          <button class="btn btn-primary btn-upgrade">구글 계정으로 로그인</button>
+          <p>게시물은 구글이나 애플로 로그인한 친구만<br>보고 쓸 수 있어요.</p>
+          <div class="row">
+            <button class="btn btn-primary btn-upgrade" data-provider="google">구글 계정으로 로그인</button>
+            <button class="btn btn-apple btn-upgrade" data-provider="apple">Apple로 로그인</button>
+          </div>
         </div>
         <div id="posts-area" hidden>
           <form id="post-form" class="card composer">
@@ -156,7 +160,7 @@
                 사진 고르기
                 <input id="profile-photo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
               </label>
-              <button id="profile-photo-reset" type="button" class="btn btn-soft btn-small">구글 사진으로</button>
+              <button id="profile-photo-reset" type="button" class="btn btn-soft btn-small">원래 사진으로</button>
               <button id="profile-photo-none" type="button" class="btn btn-soft btn-small">사진 없애기</button>
             </div>
           </div>
@@ -182,7 +186,8 @@
         </div>
 
         <div class="account-actions">
-          <button id="acc-upgrade" class="btn btn-primary btn-upgrade" hidden>구글 계정으로 로그인</button>
+          <button id="acc-upgrade" class="btn btn-primary btn-upgrade" data-provider="google" hidden>구글 계정으로 로그인</button>
+          <button id="acc-upgrade-apple" class="btn btn-apple btn-upgrade" data-provider="apple" hidden>Apple로 로그인</button>
           <button class="btn btn-soft btn-logout">로그아웃</button>
         </div>
         <p id="acc-error" class="error" hidden></p>
