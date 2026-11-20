@@ -28,7 +28,7 @@ js/games.js           게임 목록
 js/install.js         앱 설치 버튼
 manifest.webmanifest  앱 설치 정보 (이름 · 아이콘)
 sw.js                 앱 설치용 서비스 워커
-icons/                앱 아이콘
+icons/                앱 아이콘 (Zinfty 로고)
 images/               사이트 로고 (logo.webp: 로그인 화면, logo-small.webp: 상단 바)
 games/                게임들 (kit.js 는 게임 공통 도우미)
 firestore.rules       보안 규칙 (권한 · 차단 · 게시물)
